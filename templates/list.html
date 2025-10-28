@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Invoices</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 0;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .table-hover tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        .badge {
+            font-size: 0.85rem;
+            padding: 0.4em 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card">
+                    <div class="card-header bg-primary text-white text-center py-4">
+                        <h1 class="mb-0">📋 All Invoices</h1>
+                        <p class="mb-0 mt-2">Manage and download your invoices</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <a href="/" class="btn btn-outline-primary">Create New Invoice</a>
+                        </div>
+
+                        {% if invoices %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Invoice #</th>
+                                        <th>Client Name</th>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Total</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for invoice in invoices %}
+                                    <tr>
+                                        <td><strong>#{{ invoice.id }}</strong></td>
+                                        <td>{{ invoice.client_name }}</td>
+                                        <td>{{ invoice.date_created.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            {% if invoice.invoice_type == 'Quotation' %}
+                                                <span class="badge bg-info">{{ invoice.invoice_type }}</span>
+                                            {% elif invoice.invoice_type == 'Proforma' %}
+                                                <span class="badge bg-warning text-dark">{{ invoice.invoice_type }}</span>
+                                            {% else %}
+                                                <span class="badge bg-success">{{ invoice.invoice_type }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td><strong>${{ "%.2f"|format(invoice.total) }}</strong></td>
+                                        <td>
+                                            <a href="/download/{{ invoice.id }}" class="btn btn-sm btn-primary">
+                                                📥 Download PDF
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="alert alert-info mt-4">
+                            <strong>Total Invoices:</strong> {{ invoices|length }}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning text-center">
+                            <h4>No invoices yet!</h4>
+                            <p>Create your first invoice to get started.</p>
+                            <a href="/" class="btn btn-primary mt-2">Create Invoice</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
