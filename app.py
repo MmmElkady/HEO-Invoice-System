@@ -35,63 +35,81 @@ class Invoice(db.Model):
 with app.app_context():
     db.create_all()
 
+# Register Arabic-capable fonts
+pdfmetrics.registerFont(TTFont('DejaVuSans', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'))
+pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'))
+
+# Helper function to process Arabic text for PDF
+def process_arabic_text(text):
+    reshaped_text = reshape(text)
+    bidi_text = get_display(reshaped_text)
+    return bidi_text
+
 # PDF Generation Function
 def generate_pdf(invoice):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
     
-    # Title
-    c.setFont("Helvetica-Bold", 24)
-    c.drawString(1 * inch, height - 1 * inch, f"{invoice.invoice_type} Invoice")
+    # Title with both English and Arabic - Use DejaVu for potential Arabic content
+    c.setFont("DejaVuSans-Bold", 24)
+    processed_invoice_type = process_arabic_text(invoice.invoice_type) if invoice.invoice_type else invoice.invoice_type
+    c.drawString(1 * inch, height - 1 * inch, f"{processed_invoice_type} Invoice")
     
     # Invoice Details
-    c.setFont("Helvetica-Bold", 12)
+    c.setFont("DejaVuSans-Bold", 12)
     c.drawString(1 * inch, height - 1.5 * inch, f"Invoice #: {invoice.id}")
     c.drawString(1 * inch, height - 1.8 * inch, f"Date: {invoice.date_created.strftime('%Y-%m-%d %H:%M')}")
     
-    # Client Information
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(1 * inch, height - 2.5 * inch, "Client Information:")
-    c.setFont("Helvetica", 12)
-    c.drawString(1 * inch, height - 2.8 * inch, f"Name: {invoice.client_name}")
-    c.drawString(1 * inch, height - 3.1 * inch, f"Address: {invoice.client_address}")
+    # Client Information (Bilingual) - Process all user input
+    c.setFont("DejaVuSans-Bold", 14)
+    c.drawString(1 * inch, height - 2.5 * inch, f"Client Information / {process_arabic_text('معلومات العميل')}")
+    c.setFont("DejaVuSans", 12)
+    processed_client_name = process_arabic_text(invoice.client_name)
+    c.drawString(1 * inch, height - 2.8 * inch, f"Name / {process_arabic_text('الاسم')}: {processed_client_name}")
+    processed_client_address = process_arabic_text(invoice.client_address)
+    c.drawString(1 * inch, height - 3.1 * inch, f"Address / {process_arabic_text('العنوان')}: {processed_client_address}")
     
     # Invoice Items Header
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(1 * inch, height - 4 * inch, "Invoice Items:")
+    c.setFont("DejaVuSans-Bold", 14)
+    c.drawString(1 * inch, height - 4 * inch, f"Invoice Items / {process_arabic_text('بنود الفاتورة')}:")
     
-    # Table Header
-    c.setFont("Helvetica-Bold", 11)
+    # Table Header (Bilingual)
+    c.setFont("DejaVuSans-Bold", 11)
     y_position = height - 4.4 * inch
-    c.drawString(1 * inch, y_position, "Item")
-    c.drawString(3.5 * inch, y_position, "Quantity")
-    c.drawString(4.5 * inch, y_position, "Price/Item")
-    c.drawString(5.5 * inch, y_position, "Total")
+    c.drawString(1 * inch, y_position, f"Item / {process_arabic_text('المنتج')}")
+    c.drawString(3 * inch, y_position, f"Qty / {process_arabic_text('الكمية')}")
+    c.drawString(4 * inch, y_position, f"Price / {process_arabic_text('السعر')}")
+    c.drawString(5 * inch, y_position, f"Total / {process_arabic_text('المجموع')}")
     
     # Table Line
     c.line(1 * inch, y_position - 5, 6.5 * inch, y_position - 5)
     
-    # Table Data
-    c.setFont("Helvetica", 11)
+    # Table Data - Process item name for Arabic support
+    c.setFont("DejaVuSans", 11)
     y_position -= 0.3 * inch
-    c.drawString(1 * inch, y_position, invoice.item_name)
-    c.drawString(3.5 * inch, y_position, str(invoice.quantity))
-    c.drawString(4.5 * inch, y_position, f"${invoice.price_per_item:.2f}")
-    c.drawString(5.5 * inch, y_position, f"${invoice.total:.2f}")
+    processed_item_name = process_arabic_text(invoice.item_name)
+    c.drawString(1 * inch, y_position, processed_item_name)
+    c.drawString(3 * inch, y_position, str(invoice.quantity))
+    c.drawString(4 * inch, y_position, f"${invoice.price_per_item:.2f}")
+    c.drawString(5 * inch, y_position, f"${invoice.total:.2f}")
     
     # Total
     c.line(1 * inch, y_position - 5, 6.5 * inch, y_position - 5)
-    c.setFont("Helvetica-Bold", 12)
+    c.setFont("DejaVuSans-Bold", 12)
     y_position -= 0.4 * inch
-    c.drawString(4.5 * inch, y_position, "Grand Total:")
+    c.drawString(4 * inch, y_position, f"Grand Total / {process_arabic_text('المجموع الكلي')}:")
     c.drawString(5.5 * inch, y_position, f"${invoice.total:.2f}")
     
-    # Thank You Note in English
-    c.setFont("Helvetica-Italic", 11)
+    # Thank You Note in English and Arabic
+    c.setFont("DejaVuSans", 11)
     y_position -= 1 * inch
     c.drawString(1 * inch, y_position, "Thank you for your business!")
-    c.drawString(1 * inch, y_position - 0.3 * inch, "شكراً لتعاملكم معنا (Thank you - in Arabic)")
+    
+    arabic_thanks = "شكراً لتعاملكم معنا"
+    processed_arabic = process_arabic_text(arabic_thanks)
+    c.setFont("DejaVuSans", 11)
+    c.drawString(1 * inch, y_position - 0.3 * inch, processed_arabic)
     
     # Footer
     c.setFont("Helvetica", 9)
